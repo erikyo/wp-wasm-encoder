@@ -1,0 +1,7 @@
+{
+  "apiVersion": 2,
+  "name": "codekraft/wasm-encoder",
+  "title": "wasmEncoder",
+  "category": "media",
+  "editorScript": "file:../build/wasm-encoder.js"
+}

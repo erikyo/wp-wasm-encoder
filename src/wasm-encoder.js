@@ -6,7 +6,7 @@ import { __ } from '@wordpress/i18n';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import { Fragment } from '@wordpress/element';
 import { InspectorControls } from '@wordpress/block-editor';
-import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
+import { createFFmpeg } from '@ffmpeg/ffmpeg';
 import { Button, PanelBody } from '@wordpress/components';
 
 /**
@@ -126,7 +126,24 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 							) }
 							{ isSelected && name === 'core/image' && (
 								<>
-									<p>Imagemagick</p>
+									<h3>Image to mp4 (x264)</h3>
+									<img
+										id="output-img"
+										src={ attributes.url }
+									/>
+									<br />
+									<Button
+										variant={ 'primary' }
+										onClick={ () =>
+											transcode( {
+												target: attributes.url,
+											} )
+										}
+									>
+										Encode
+									</Button>
+									<Button onClick={ cancel }>Cancel</Button>
+									<p id="message"></p>
 								</>
 							) }
 						</PanelBody>

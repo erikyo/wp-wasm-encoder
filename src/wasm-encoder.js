@@ -23,7 +23,7 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 
 			let ffmpeg = null;
 
-			const transcode = async ( { target } ) => {
+			const transcode = async ( { target, type } ) => {
 				if ( ffmpeg === null ) {
 					ffmpeg = createFFmpeg( {
 						log: true,
@@ -37,7 +37,10 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 					} );
 				}
 				const message = document.getElementById( 'message' );
-				const video = document.getElementById( 'output-video' );
+				const destination =
+					type === 'video'
+						? document.getElementById( 'output-video' )
+						: document.getElementById( 'output-image' );
 				const filenameExt = target.split( '/' ).pop();
 				const externsion = filenameExt.split( '.' ).pop();
 				const filename = filenameExt.replace( '.' + externsion, '' );
@@ -70,11 +73,12 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 									'readFile',
 									filename + '.mp4'
 								);
-								video.src = URL.createObjectURL(
+								const result = URL.createObjectURL(
 									new Blob( [ data.buffer ], {
 										type: 'video/mp4',
 									} )
 								);
+								destination.src = result;
 							} )
 							.catch( ( error ) => {
 								// ...handle/report error...
@@ -115,6 +119,7 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 										onClick={ () =>
 											transcode( {
 												target: attributes.src,
+												type: 'video',
 											} )
 										}
 									>
@@ -128,17 +133,18 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 								<>
 									<h3>Image to mp4 (x264)</h3>
 									<img
-										id="output-img"
+										id="output-image"
 										src={ attributes.url }
 									/>
 									<br />
 									<Button
 										variant={ 'primary' }
-										onClick={ () =>
+										onClick={ () => {
 											transcode( {
 												target: attributes.url,
-											} )
-										}
+												type: 'image',
+											} );
+										} }
 									>
 										Encode
 									</Button>

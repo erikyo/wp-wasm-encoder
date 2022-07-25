@@ -13,8 +13,8 @@ function wasm_editor_scripts() {
 add_action( 'enqueue_block_editor_assets', 'wasm_editor_scripts' );
 
 // Add HTTP Header
-function shapeSpace_add_header() {
+function wasm_add_header() {
 	header('Cross-Origin-Opener-Policy: same-origin');
 	header('Cross-Origin-Embedder-Policy: require-corp');
 }
-add_action('admin_init', 'shapeSpace_add_header');
+add_action('admin_init', 'wasm_add_header');

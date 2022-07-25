@@ -1603,7 +1603,8 @@ const wasmVideoEncoderTab = (0,_wordpress_compose__WEBPACK_IMPORTED_MODULE_3__.c
 
     const transcode = async _ref => {
       let {
-        target
+        target,
+        type
       } = _ref;
 
       if (ffmpeg === null) {
@@ -1620,7 +1621,7 @@ const wasmVideoEncoderTab = (0,_wordpress_compose__WEBPACK_IMPORTED_MODULE_3__.c
       }
 
       const message = document.getElementById('message');
-      const video = document.getElementById('output-video');
+      const destination = type === 'video' ? document.getElementById('output-video') : document.getElementById('output-image');
       const filenameExt = target.split('/').pop();
       const externsion = filenameExt.split('.').pop();
       const filename = filenameExt.replace('.' + externsion, '');
@@ -1634,9 +1635,10 @@ const wasmVideoEncoderTab = (0,_wordpress_compose__WEBPACK_IMPORTED_MODULE_3__.c
         }).then(() => {
           message.innerHTML = 'Complete transcoding';
           const data = ffmpeg.FS('readFile', filename + '.mp4');
-          video.src = URL.createObjectURL(new Blob([data.buffer], {
+          const result = URL.createObjectURL(new Blob([data.buffer], {
             type: 'video/mp4'
           }));
+          destination.src = result;
         }).catch(error => {
           // ...handle/report error...
           console.warn(error);
@@ -1665,20 +1667,24 @@ const wasmVideoEncoderTab = (0,_wordpress_compose__WEBPACK_IMPORTED_MODULE_3__.c
     }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("br", null), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_6__.Button, {
       variant: 'primary',
       onClick: () => transcode({
-        target: attributes.src
+        target: attributes.src,
+        type: 'video'
       })
     }, "Encode"), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_6__.Button, {
       onClick: cancel
     }, "Cancel"), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", {
       id: "message"
     })), isSelected && name === 'core/image' && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", null, "Image to mp4 (x264)"), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("img", {
-      id: "output-img",
+      id: "output-image",
       src: attributes.url
     }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("br", null), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_6__.Button, {
       variant: 'primary',
-      onClick: () => transcode({
-        target: attributes.url
-      })
+      onClick: () => {
+        transcode({
+          target: attributes.url,
+          type: 'image'
+        });
+      }
     }, "Encode"), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_6__.Button, {
       onClick: cancel
     }, "Cancel"), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", {

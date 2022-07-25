@@ -14,7 +14,7 @@ add_action( 'enqueue_block_editor_assets', 'wasm_editor_scripts' );
 
 // Add HTTP Header
 function shapeSpace_add_header() {
-	if (is_admin()) header('Cross-Origin-Opener-Policy: same-origin');
-	if (is_admin()) header('Cross-Origin-Embedder-Policy: require-corp');
+	header('Cross-Origin-Opener-Policy: same-origin');
+	header('Cross-Origin-Embedder-Policy: require-corp');
 }
-add_action('admin_head', 'shapeSpace_add_header');
+add_action('admin_init', 'shapeSpace_add_header');

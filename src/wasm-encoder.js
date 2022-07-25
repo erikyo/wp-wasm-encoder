@@ -23,38 +23,63 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 
 			let ffmpeg = null;
 
-			const transcode = ( { target } ) => {
+			const transcode = async ( { target } ) => {
 				if ( ffmpeg === null ) {
 					ffmpeg = createFFmpeg( {
 						log: true,
 						corePath:
 							'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js',
+						progress: ( { ratio } ) => {
+							message.innerHTML = `Complete: ${ (
+								ratio * 100.0
+							).toFixed( 2 ) }%`;
+						},
 					} );
 				}
 				const message = document.getElementById( 'message' );
 				const video = document.getElementById( 'output-video' );
+				const filenameExt = target.split( '/' ).pop();
+				const externsion = filenameExt.split( '.' ).pop();
+				const filename = filenameExt.replace( '.' + externsion, '' );
 
 				message.innerHTML = 'Loading ffmpeg-core.js';
 
-				ffmpeg
-					.load()
-					.then( () => {
-						return ffmpeg.FS(
-							'writeFile',
-							'video.mp4',
-							fetchFile( target )
-						);
-					} )
-					.then( () => {
-						message.innerHTML = 'Start transcoding';
-						return ffmpeg.run( '-i', name, 'output.mp4' );
-					} )
-					.then( () => {
-						message.innerHTML = 'Complete transcoding';
-						const data = ffmpeg.FS( 'readFile', 'output.mp4' );
-						video.src = URL.createObjectURL(
-							new Blob( [ data.buffer ], { type: 'video/mp4' } )
-						);
+				fetch( target )
+					.then( ( res ) => res.arrayBuffer() )
+					.then( ( file ) => {
+						ffmpeg
+							.load()
+							.then( () => {
+								return ffmpeg.FS(
+									'writeFile',
+									filenameExt,
+									new Uint8Array( file, 0, file.byteLength )
+								);
+							} )
+							.then( () => {
+								message.innerHTML = 'Start transcoding';
+								return ffmpeg.run(
+									'-i',
+									filenameExt,
+									filename + '.mp4'
+								);
+							} )
+							.then( () => {
+								message.innerHTML = 'Complete transcoding';
+								const data = ffmpeg.FS(
+									'readFile',
+									filename + '.mp4'
+								);
+								video.src = URL.createObjectURL(
+									new Blob( [ data.buffer ], {
+										type: 'video/mp4',
+									} )
+								);
+							} )
+							.catch( ( error ) => {
+								// ...handle/report error...
+								console.warn( error );
+							} );
 					} );
 			};
 

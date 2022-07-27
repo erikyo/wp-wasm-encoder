@@ -4,10 +4,38 @@
 import { addFilter } from '@wordpress/hooks';
 import { __ } from '@wordpress/i18n';
 import { createHigherOrderComponent } from '@wordpress/compose';
-import { Fragment } from '@wordpress/element';
+import { Fragment, useState } from '@wordpress/element';
 import { InspectorControls } from '@wordpress/block-editor';
 import { createFFmpeg } from '@ffmpeg/ffmpeg';
-import { Button, PanelBody } from '@wordpress/components';
+import { Button, PanelBody, SelectControl } from '@wordpress/components';
+
+// the available formats
+const formats = {
+	mp4: 'mp4 (x264)',
+	mp4x265: 'mp4 (x265)',
+	webm: 'webm (libvpx)',
+	ogv: 'ogv (theora)',
+	mpeg1: 'mpeg-1 (native)',
+	mpeg2: 'mpeg-2 (native)',
+	av1: 'av1 (av1 codec)',
+	avif: 'avif (av1 codec)',
+	mp3: 'mp3 (lame)',
+	aac: 'aac (fdk-aac)',
+	wav: 'wav/wv (wavpack)',
+	ogg: 'ogg (vorbis)',
+	opus: 'opus (opus)',
+	flac: 'flac (native)',
+	gif: 'gif (native)',
+	webp: 'webp (libwebp)',
+};
+
+// build the select content
+const formatSelect = Object.entries( formats ).map( ( opt ) => {
+	return {
+		value: opt[ 0 ],
+		label: opt[ 1 ],
+	};
+} );
 
 /**
  * Add mobile visibility controls on Advanced Block Panel.
@@ -19,11 +47,15 @@ import { Button, PanelBody } from '@wordpress/components';
 export const wasmVideoEncoderTab = createHigherOrderComponent(
 	( BlockEdit ) => {
 		return ( props ) => {
-			const { name, attributes, setAttributes, isSelected } = props;
+			const { name, attributes, isSelected } = props;
+			const [ encoding, setEncoding ] = useState(
+				formatSelect[ 0 ].value
+			);
 
 			let ffmpeg = null;
 
 			const transcode = async ( { target, type } ) => {
+        const ext = encoding;
 				if ( ffmpeg === null ) {
 					ffmpeg = createFFmpeg( {
 						log: true,
@@ -60,24 +92,31 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 								);
 							} )
 							.then( () => {
-								message.innerHTML = 'Start transcoding';
+								message.innerHTML = 'Transcoding to ' + ext;
 								return ffmpeg.run(
 									'-i',
 									filenameExt,
-									filename + '.mp4'
+									filename + '.' + ext
 								);
 							} )
 							.then( () => {
 								message.innerHTML = 'Complete transcoding';
 								const data = ffmpeg.FS(
 									'readFile',
-									filename + '.mp4'
+									filename + '.' + ext
 								);
 								const result = URL.createObjectURL(
 									new Blob( [ data.buffer ], {
-										type: 'video/mp4',
+										type: type + '/' + ext, //this will fail for sure
 									} )
 								);
+								// TODO: REMOVE
+								// open the transcoded file into another url
+								const anchor = document.createElement( 'a' );
+								anchor.href = result;
+								anchor.target = '_blank';
+								anchor.click();
+								// TODO: /REMOVE
 								destination.src = result;
 							} )
 							.catch( ( error ) => {
@@ -105,9 +144,17 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 							icon="visibility"
 							title={ __( 'Wasm-encoder' ) }
 						>
+							<SelectControl
+								value={ encoding }
+								label={ __( 'Select target destination:' ) }
+								onChange={ ( ev ) => {
+									setEncoding( ev );
+								} }
+								options={ formatSelect }
+							></SelectControl>
 							{ isSelected && name === 'core/video' && (
 								<>
-									<h3>to mp4 (x264)</h3>
+									<h3>Encode to { encoding }</h3>
 									<video
 										id="output-video"
 										src={ attributes.src }
@@ -120,6 +167,7 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 											transcode( {
 												target: attributes.src,
 												type: 'video',
+												format: encoding,
 											} )
 										}
 									>
@@ -143,6 +191,7 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 											transcode( {
 												target: attributes.url,
 												type: 'image',
+												format: encoding,
 											} );
 										} }
 									>
@@ -154,11 +203,6 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 							) }
 						</PanelBody>
 					</InspectorControls>
-					<script>
-						{ ' ' }
-						if (!crossOriginIsolated) SharedArrayBuffer =
-						ArrayBuffer;{ ' ' }
-					</script>
 				</Fragment>
 			);
 		};

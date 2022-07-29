@@ -55,7 +55,7 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 			let ffmpeg = null;
 
 			const transcode = async ( { target, type } ) => {
-        const ext = encoding;
+				const ext = encoding;
 				if ( ffmpeg === null ) {
 					ffmpeg = createFFmpeg( {
 						log: true,
@@ -74,8 +74,8 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 						? document.getElementById( 'output-video' )
 						: document.getElementById( 'output-image' );
 				const filenameExt = target.split( '/' ).pop();
-				const externsion = filenameExt.split( '.' ).pop();
-				const filename = filenameExt.replace( '.' + externsion, '' );
+				const extension = filenameExt.split( '.' ).pop();
+				const filename = filenameExt.replace( '.' + extension, '' );
 
 				message.innerHTML = 'Loading ffmpeg-core.js';
 
@@ -93,9 +93,15 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 							} )
 							.then( () => {
 								message.innerHTML = 'Transcoding to ' + ext;
+								// ENCODING OPTIONS
+								const options =
+									ext === 'avif'
+										? [ '-c:v', 'libaom-av1' ]
+										: [];
 								return ffmpeg.run(
 									'-i',
 									filenameExt,
+									...options,
 									filename + '.' + ext
 								);
 							} )
@@ -105,23 +111,40 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 									'readFile',
 									filename + '.' + ext
 								);
-								const result = URL.createObjectURL(
-									new Blob( [ data.buffer ], {
-										type: type + '/' + ext, //this will fail for sure
+								//const result = URL.createObjectURL(
+								//	new Blob( [ data.buffer ], {
+								//		type: type + '/' + ext,
+								//	} )
+								//);
+
+								fetch(
+									window.location.origin +
+										wp.ajax.settings.url,
+									{
+										method: 'POST',
+										credentials: 'same-origin',
+										headers: {
+											'Content-type':
+												'application/x-www-form-urlencoded; charset=UTF-8',
+										},
+										body: new URLSearchParams( {
+											nonce: wasmData.nonce,
+											action: 'medialoader',
+											fileName: filename + '.' + ext,
+											fileData: data,
+										} ).toString(),
+									}
+								)
+									.then( ( response ) => {
+										return response;
 									} )
-								);
-								// TODO: REMOVE
-								// open the transcoded file into another url
-								const anchor = document.createElement( 'a' );
-								anchor.href = result;
-								anchor.target = '_blank';
-								anchor.click();
-								// TODO: /REMOVE
-								destination.src = result;
-							} )
-							.catch( ( error ) => {
-								// ...handle/report error...
-								console.warn( error );
+									.then( ( response ) => {
+										// read data here
+										console.log( response );
+									} )
+									.catch( ( err ) => {
+										console.log( err );
+									} );
 							} );
 					} );
 			};

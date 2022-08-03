@@ -5,12 +5,13 @@ import { addFilter } from '@wordpress/hooks';
 import { __ } from '@wordpress/i18n';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import { Fragment, useState } from '@wordpress/element';
+import apiFetch from '@wordpress/api-fetch';
 import { InspectorControls } from '@wordpress/block-editor';
 import { createFFmpeg } from '@ffmpeg/ffmpeg';
 import { Button, PanelBody, SelectControl } from '@wordpress/components';
 
 // the available formats
-const formats = {
+export const formats = {
 	mp4: 'mp4 (x264)',
 	mp4x265: 'mp4 (x265)',
 	webm: 'webm (libvpx)',
@@ -107,7 +108,7 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 							} )
 							.then( () => {
 								message.innerHTML = 'Complete transcoding';
-								const data = ffmpeg.FS(
+								const fileData = ffmpeg.FS(
 									'readFile',
 									filename + '.' + ext
 								);
@@ -116,33 +117,29 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 								//		type: type + '/' + ext,
 								//	} )
 								//);
+								//Endpoint URL
+								const path =
+									'/index.php?rest_route=/wp-wasm-encoder/v1/upload/';
+								const data = JSON.stringify( {
+									fileName: filename + '.' + ext,
+									fileData,
+								} );
 
-								fetch(
-									window.location.origin +
-										wp.ajax.settings.url,
-									{
-										method: 'POST',
-										credentials: 'same-origin',
-										headers: {
-											'Content-type':
-												'application/x-www-form-urlencoded; charset=UTF-8',
-										},
-										body: new URLSearchParams( {
-											nonce: wasmData.nonce,
-											action: 'medialoader',
-											fileName: filename + '.' + ext,
-											fileData: data,
-										} ).toString(),
-									}
-								)
-									.then( ( response ) => {
-										return response;
-									} )
+								// Post media via REST
+								apiFetch( {
+									path,
+									data,
+									method: 'POST',
+								} )
 									.then( ( response ) => {
 										// read data here
+										message.innerHTML =
+											JSON.stringify( response );
 										console.log( response );
 									} )
 									.catch( ( err ) => {
+										message.innerHTML =
+											JSON.stringify( err );
 										console.log( err );
 									} );
 							} );

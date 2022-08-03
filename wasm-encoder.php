@@ -24,4 +24,4 @@ function wasm_add_header() {
 add_action( 'admin_init', 'wasm_add_header' );
 
 include __DIR__ . '/inc/enqueue_scripts.php';
-include __DIR__ . '/inc/ajax-media-uploader.php';
+include __DIR__ . '/inc/rest-route.php';

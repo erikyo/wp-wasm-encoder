@@ -53,15 +53,14 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 				formatSelect[ 0 ].value
 			);
 
-			let ffmpeg = null;
+			const ffmpeg = createFFmpeg( { log: true } );
 
 			const transcode = async ( { target, type } ) => {
 				const ext = encoding;
 				if ( ffmpeg === null ) {
-					ffmpeg = createFFmpeg( {
+					createFFmpeg( {
 						log: true,
-						corePath:
-							'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js',
+						corePath: 'static/js/ffmpeg-core.js',
 						progress: ( { ratio } ) => {
 							message.innerHTML = `Complete: ${ (
 								ratio * 100.0
@@ -83,7 +82,7 @@ export const wasmVideoEncoderTab = createHigherOrderComponent(
 				fetch( target )
 					.then( ( res ) => res.arrayBuffer() )
 					.then( ( file ) => {
-						ffmpeg
+						return ffmpeg
 							.load()
 							.then( () => {
 								return ffmpeg.FS(

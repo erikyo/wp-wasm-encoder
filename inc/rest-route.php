@@ -21,10 +21,13 @@ add_action('rest_api_init', function (){
 		[
 			'methods' => ['POST'],
 			'callback' => function($request){
-				$params = $request->get_params();
-				error_log($request);
-				error_log($params);
-				medialoader($params->fileData,$params->fileName);
+				$image_data = $request->get_body();
+				$image_filename = $request->get_header('Content-Title');
+				$image_mime = $request->get_content_type();
+				error_log(print_r($image_data, true));
+				error_log(print_r($image_filename, true));
+				error_log(print_r($image_mime, true));
+				medialoader($image_data, $image_filename, $image_mime);
 				return rest_ensure_response(  ['success' => true], 200);
 			},
 			'permission_callback' => function(){
@@ -42,11 +45,9 @@ add_action('rest_api_init', function (){
  *
  * @return int|WP_Error - The attachment ID of the image.
  */
-function medialoader($file, $filename) {
+function medialoader($image_data, $filename, $filemime = false) {
 
 	$upload_dir = wp_upload_dir();
-
-	$image_data = file_get_contents( $file );
 
 	if ( wp_mkdir_p( $upload_dir['path'] ) ) {
 		$file = $upload_dir['path'] . '/' . $filename;

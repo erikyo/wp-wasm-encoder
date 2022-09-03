@@ -706,6 +706,325 @@ module.exports = (Core, args) => {
 
 /***/ }),
 
+/***/ "./src/data.js":
+/*!*********************!*\
+  !*** ./src/data.js ***!
+  \*********************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "availableFormats": () => (/* binding */ availableFormats),
+/* harmony export */   "formatSelect": () => (/* binding */ formatSelect),
+/* harmony export */   "getType": () => (/* binding */ getType)
+/* harmony export */ });
+// The available FFmpeg formats
+// https://github.com/ffmpegwasm/ffmpeg.wasm-core#configuration
+const availableFormats = {
+  mp4x264: {
+    type: 'video',
+    value: 'mp4x264',
+    name: 'mp4 (x264)',
+    extension: 'mp4',
+    encodeTo: [],
+    options: []
+  },
+  mp4x265: {
+    type: 'video',
+    value: 'mp4x265',
+    name: 'mp4 (x265)',
+    extension: 'mp4',
+    encodeTo: [],
+    options: []
+  },
+  webm: {
+    type: 'video',
+    value: 'webm',
+    name: 'webm (libvpx)',
+    extension: 'webm',
+    encodeTo: [],
+    options: []
+  },
+  ogv: {
+    type: 'video',
+    value: 'ogv',
+    name: 'ogv (theora)',
+    extension: 'ogv',
+    encodeTo: [],
+    options: []
+  },
+  av1: {
+    type: 'video',
+    value: 'aom',
+    name: 'aom (mkv format, extremely slow takes over 120s for 1s video, not recommended to use)',
+    extension: 'mkv',
+    encodeTo: [],
+    options: []
+  },
+  mpeg1: {
+    type: 'video',
+    value: 'mpeg1',
+    name: 'mpeg-1 (native)',
+    extension: 'mpeg',
+    encodeTo: [],
+    options: []
+  },
+  mpeg2: {
+    type: 'video',
+    value: 'mpeg2',
+    name: 'mpeg-2 (native)',
+    extension: 'mpeg',
+    encodeTo: [],
+    options: []
+  },
+  mp3: {
+    type: 'audio',
+    value: 'mp3',
+    name: 'mp3 (lame)',
+    extension: 'mp3',
+    encodeTo: [],
+    options: []
+  },
+  aac: {
+    type: 'audio',
+    value: 'aac',
+    name: 'aac (fdk-aac)',
+    extension: 'aac',
+    encodeTo: [],
+    options: []
+  },
+  wav: {
+    type: 'audio',
+    value: 'wav',
+    name: 'wav/wv (wavpack)',
+    extension: 'wav',
+    encodeTo: [],
+    options: []
+  },
+  ogg: {
+    type: 'audio',
+    value: 'ogg',
+    name: 'ogg (vorbis)',
+    extension: 'ogg',
+    encodeTo: [],
+    options: []
+  },
+  opus: {
+    type: 'audio',
+    value: 'opus',
+    name: 'opus (opus)',
+    extension: 'opus',
+    encodeTo: [],
+    options: []
+  },
+  flac: {
+    type: 'audio',
+    value: 'flac',
+    name: 'flac (native)',
+    extension: 'flac',
+    encodeTo: [],
+    options: []
+  },
+  gif: {
+    type: 'image',
+    value: 'gif',
+    name: 'gif (native)',
+    extension: 'gif',
+    encodeTo: [],
+    options: []
+  },
+  webp: {
+    type: 'image',
+    value: 'webp',
+    name: 'webp (libwebp)',
+    extension: 'webp',
+    encodeTo: [],
+    options: []
+  },
+  avif: {
+    type: 'image',
+    value: 'avif',
+    name: 'avif (av1 codec)',
+    extension: 'avif',
+    encodeTo: [],
+    options: ['-c:v', 'libaom-av1']
+  }
+};
+/**
+ * It takes a type as an argument and returns an array of objects with the name and label properties
+ *
+ * @param {string} type - The type of format you want to return.
+ */
+
+const formatSelect = type => {
+  const types = Object.values(availableFormats).map(opt => {
+    return opt.type === type ? {
+      extension: opt.extension,
+      value: opt.value,
+      label: opt.name
+    } : null;
+  });
+  return types.filter(Boolean);
+};
+/**
+ * If the block name is 'core/image', return 'image',
+ * if the block name is 'core/video', return 'video',
+ * if the block name is 'core/audio', return 'audio',
+ * otherwise return 'video'
+ *
+ * @param {string} blockName - The name of the block.
+ *
+ * @return {string} the type of media that is being used.
+ */
+
+function getType(blockName) {
+  switch (blockName) {
+    case 'core/image':
+    case 'core/post-featured-image':
+      return 'image';
+
+    case 'core/video':
+      return 'video';
+
+    case 'core/audio':
+      return 'audio';
+
+    default:
+      console.log(blockName);
+      return 'video';
+  }
+}
+
+/***/ }),
+
+/***/ "./src/ffmpeg.js":
+/*!***********************!*\
+  !*** ./src/ffmpeg.js ***!
+  \***********************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "cancel": () => (/* binding */ cancel),
+/* harmony export */   "ffmpeg": () => (/* binding */ ffmpeg),
+/* harmony export */   "ffmpegLoaded": () => (/* binding */ ffmpegLoaded),
+/* harmony export */   "transcode": () => (/* binding */ transcode)
+/* harmony export */ });
+/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/api-fetch */ "@wordpress/api-fetch");
+/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(_wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _ffmpeg_ffmpeg__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @ffmpeg/ffmpeg */ "./node_modules/@ffmpeg/ffmpeg/src/index.js");
+/* harmony import */ var _ffmpeg_ffmpeg__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_ffmpeg_ffmpeg__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _data__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./data */ "./src/data.js");
+/**
+ * WordPress Dependencies
+ */
+
+/**
+ * Plugin Dependencies
+ */
+
+
+
+let ffmpeg = false;
+let ffmpegLoaded = false;
+/**
+ * It fetches the file, transcodes it, and then sends it to the server
+ *
+ * @param  newEncode
+ * @param  newEncode.target
+ * @param  newEncode.data
+ */
+
+const transcode = async _ref => {
+  let {
+    target,
+    data
+  } = _ref;
+  const typeData = _data__WEBPACK_IMPORTED_MODULE_2__.availableFormats[data];
+  /** Encoder vars */
+
+  const message = document.getElementById('wp-wasm-message'); // we got the filepath, but we need only the filename and extension
+  // 👇 assuming there are no slashes into filename
+
+  const sourceFilenameExt = target.split('/').pop(); // 👇 assuming there are no other dots in the filename
+
+  const sourceExtension = sourceFilenameExt.split('.').pop();
+  const sourceFilename = sourceFilenameExt.replace('.' + sourceExtension, '');
+  const newFilename = sourceFilename + '.' + typeData.extension;
+  const newFileMime = typeData.type + '/' + typeData.extension;
+  ffmpeg = (0,_ffmpeg_ffmpeg__WEBPACK_IMPORTED_MODULE_1__.createFFmpeg)({
+    log: true
+  }); // Endpoint URL
+
+  const path = '/index.php?rest_route=/wp-wasm-encoder/v1/upload/';
+
+  if (!ffmpeg) {
+    ffmpeg = (0,_ffmpeg_ffmpeg__WEBPACK_IMPORTED_MODULE_1__.createFFmpeg)({
+      log: true,
+      corePath: 'static/js/ffmpeg-core.js',
+      progress: _ref2 => {
+        let {
+          ratio
+        } = _ref2;
+        message.innerHTML = `Complete: ${(ratio * 100.0).toFixed(2)}%`;
+      }
+    });
+  }
+
+  message.innerHTML = 'Loading ffmpeg-core.js';
+  fetch(target).then(res => res.arrayBuffer()).then(file => {
+    return ffmpeg.load().then(() => {
+      ffmpegLoaded = true;
+      return ffmpeg.FS('writeFile', sourceFilenameExt, new Uint8Array(file, 0, file.byteLength));
+    }).then(() => {
+      message.innerHTML = 'Transcoding to ' + typeData.extension;
+      return ffmpeg.run('-i', sourceFilenameExt, ...typeData.options, newFilename);
+    }).then(() => {
+      message.innerHTML = 'Complete transcoding';
+      const fileData = ffmpeg.FS('readFile', newFilename); // Prepare the file to be sent as a blob with the correct mime
+      // const result = new window.Blob( [ fileData ], {
+      // 	type: newFileMime,
+      // } );
+      // Post media via REST
+
+      _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_0___default()({
+        path,
+        headers: {
+          'Content-Type': newFileMime,
+          'Content-Title': newFilename,
+          'Content-Disposition': 'attachment; filename="' + newFilename + '"'
+        },
+        body: fileData,
+        method: 'POST'
+      }).then(response => {
+        // read data here
+        message.innerHTML = JSON.stringify(response);
+        console.log(response);
+      }).catch(err => {
+        message.innerHTML = JSON.stringify(err);
+        console.log(err);
+      });
+    });
+  });
+};
+/**
+ * It cancels the current ffmpeg process
+ */
+
+const cancel = () => {
+  try {
+    ffmpeg.exit();
+  } catch (e) {
+    throw new Error(e);
+  }
+
+  ffmpeg = null;
+};
+
+/***/ }),
+
 /***/ "./node_modules/regenerator-runtime/runtime.js":
 /*!*****************************************************!*\
   !*** ./node_modules/regenerator-runtime/runtime.js ***!
@@ -1707,7 +2026,6 @@ var __webpack_exports__ = {};
   \*****************************/
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "formats": () => (/* binding */ formats),
 /* harmony export */   "wasmVideoEncoderTab": () => (/* binding */ wasmVideoEncoderTab)
 /* harmony export */ });
 /* harmony import */ var _wordpress_element__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @wordpress/element */ "@wordpress/element");
@@ -1718,14 +2036,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _wordpress_i18n__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__);
 /* harmony import */ var _wordpress_compose__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @wordpress/compose */ "@wordpress/compose");
 /* harmony import */ var _wordpress_compose__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(_wordpress_compose__WEBPACK_IMPORTED_MODULE_3__);
-/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/api-fetch */ "@wordpress/api-fetch");
-/* harmony import */ var _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_4__);
-/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @wordpress/block-editor */ "@wordpress/block-editor");
-/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_5__);
-/* harmony import */ var _ffmpeg_ffmpeg__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @ffmpeg/ffmpeg */ "./node_modules/@ffmpeg/ffmpeg/src/index.js");
-/* harmony import */ var _ffmpeg_ffmpeg__WEBPACK_IMPORTED_MODULE_6___default = /*#__PURE__*/__webpack_require__.n(_ffmpeg_ffmpeg__WEBPACK_IMPORTED_MODULE_6__);
-/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
-/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_7__);
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @wordpress/block-editor */ "@wordpress/block-editor");
+/* harmony import */ var _wordpress_block_editor__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @wordpress/components */ "@wordpress/components");
+/* harmony import */ var _wordpress_components__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(_wordpress_components__WEBPACK_IMPORTED_MODULE_5__);
+/* harmony import */ var _data__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./data */ "./src/data.js");
+/* harmony import */ var _ffmpeg__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ./ffmpeg */ "./src/ffmpeg.js");
 
 
 /**
@@ -1737,34 +2053,12 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+/**
+ * Plugin Dependencies
+ */
 
- // the available formats
 
-const formats = {
-  mp4: 'mp4 (x264)',
-  mp4x265: 'mp4 (x265)',
-  webm: 'webm (libvpx)',
-  ogv: 'ogv (theora)',
-  mpeg1: 'mpeg-1 (native)',
-  mpeg2: 'mpeg-2 (native)',
-  av1: 'av1 (av1 codec)',
-  avif: 'avif (av1 codec)',
-  mp3: 'mp3 (lame)',
-  aac: 'aac (fdk-aac)',
-  wav: 'wav/wv (wavpack)',
-  ogg: 'ogg (vorbis)',
-  opus: 'opus (opus)',
-  flac: 'flac (native)',
-  gif: 'gif (native)',
-  webp: 'webp (libwebp)'
-}; // build the select content
 
-const formatSelect = Object.entries(formats).map(opt => {
-  return {
-    value: opt[0],
-    label: opt[1]
-  };
-});
 /**
  * Add mobile visibility controls on Advanced Block Panel.
  *
@@ -1780,128 +2074,42 @@ const wasmVideoEncoderTab = (0,_wordpress_compose__WEBPACK_IMPORTED_MODULE_3__.c
       attributes,
       isSelected
     } = props;
-    const [encoding, setEncoding] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)(formatSelect[0].value);
-    const ffmpeg = (0,_ffmpeg_ffmpeg__WEBPACK_IMPORTED_MODULE_6__.createFFmpeg)({
-      log: true
-    });
-
-    const transcode = async _ref => {
-      let {
-        target,
-        type
-      } = _ref;
-      const ext = encoding;
-
-      if (ffmpeg === null) {
-        (0,_ffmpeg_ffmpeg__WEBPACK_IMPORTED_MODULE_6__.createFFmpeg)({
-          log: true,
-          corePath: 'static/js/ffmpeg-core.js',
-          progress: _ref2 => {
-            let {
-              ratio
-            } = _ref2;
-            message.innerHTML = `Complete: ${(ratio * 100.0).toFixed(2)}%`;
-          }
-        });
-      }
-
-      const message = document.getElementById('message');
-      const destination = type === 'video' ? document.getElementById('output-video') : document.getElementById('output-image');
-      const filenameExt = target.split('/').pop();
-      const extension = filenameExt.split('.').pop();
-      const filename = filenameExt.replace('.' + extension, '');
-      message.innerHTML = 'Loading ffmpeg-core.js';
-      fetch(target).then(res => res.arrayBuffer()).then(file => {
-        return ffmpeg.load().then(() => {
-          return ffmpeg.FS('writeFile', filenameExt, new Uint8Array(file, 0, file.byteLength));
-        }).then(() => {
-          message.innerHTML = 'Transcoding to ' + ext; // ENCODING OPTIONS
-
-          const options = ext === 'avif' ? ['-c:v', 'libaom-av1'] : [];
-          return ffmpeg.run('-i', filenameExt, ...options, filename + '.' + ext);
-        }).then(() => {
-          message.innerHTML = 'Complete transcoding';
-          const fileData = ffmpeg.FS('readFile', filename + '.' + ext); //const result = URL.createObjectURL(
-          //	new Blob( [ data.buffer ], {
-          //		type: type + '/' + ext,
-          //	} )
-          //);
-          //Endpoint URL
-
-          const path = '/index.php?rest_route=/wp-wasm-encoder/v1/upload/';
-          const data = JSON.stringify({
-            fileName: filename + '.' + ext,
-            fileData
-          }); // Post media via REST
-
-          _wordpress_api_fetch__WEBPACK_IMPORTED_MODULE_4___default()({
-            path,
-            data,
-            method: 'POST'
-          }).then(response => {
-            // read data here
-            message.innerHTML = JSON.stringify(response);
-            console.log(response);
-          }).catch(err => {
-            message.innerHTML = JSON.stringify(err);
-            console.log(err);
-          });
-        });
-      });
-    };
-
-    const cancel = () => {
-      try {
-        ffmpeg.exit();
-      } catch (e) {
-        throw new Error(e);
-      }
-
-      ffmpeg = null;
-    };
-
-    return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(BlockEdit, props), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_5__.InspectorControls, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_7__.PanelBody, {
+    const [encoding, setEncoding] = (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.useState)((0,_data__WEBPACK_IMPORTED_MODULE_6__.formatSelect)((0,_data__WEBPACK_IMPORTED_MODULE_6__.getType)(name))[0].value);
+    return (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(BlockEdit, props), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_block_editor__WEBPACK_IMPORTED_MODULE_4__.InspectorControls, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_5__.PanelBody, {
       initialOpen: true,
       icon: "visibility",
       title: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('Wasm-encoder')
-    }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_7__.SelectControl, {
+    }, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_5__.SelectControl, {
       value: encoding,
       label: (0,_wordpress_i18n__WEBPACK_IMPORTED_MODULE_2__.__)('Select target destination:'),
       onChange: ev => {
         setEncoding(ev);
       },
-      options: formatSelect
-    }), isSelected && name === 'core/video' && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", null, "Encode to ", encoding), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("video", {
+      options: (0,_data__WEBPACK_IMPORTED_MODULE_6__.formatSelect)((0,_data__WEBPACK_IMPORTED_MODULE_6__.getType)(name))
+    }), isSelected && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", null, "Image to Video"), (0,_data__WEBPACK_IMPORTED_MODULE_6__.getType)(name) === 'image' ? (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("img", {
+      id: "output-image",
+      src: attributes.url,
+      alt: ""
+    }) : null, (0,_data__WEBPACK_IMPORTED_MODULE_6__.getType)(name) === 'video' ? (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("video", {
       id: "output-video",
       src: attributes.src,
       controls: true
-    }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("br", null), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_7__.Button, {
+    }) : null, (0,_data__WEBPACK_IMPORTED_MODULE_6__.getType)(name) === 'audio' ? (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("audio", {
+      id: "output-video",
+      src: attributes.src,
+      controls: true
+    }) : null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("br", null), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_5__.CheckboxControl, null), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_5__.Button, {
       variant: 'primary',
-      onClick: () => transcode({
-        target: attributes.src,
-        type: 'video',
-        format: encoding
-      })
-    }, "Encode"), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_7__.Button, {
-      onClick: cancel
-    }, "Cancel"), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", {
-      id: "message"
-    })), isSelected && name === 'core/image' && (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.Fragment, null, (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("h3", null, "Image to mp4 (x264)"), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("img", {
-      id: "output-image",
-      src: attributes.url
-    }), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("br", null), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_7__.Button, {
-      variant: 'primary',
-      onClick: () => {
-        transcode({
-          target: attributes.url,
-          type: 'image',
-          format: encoding
+      onClick: async () => {
+        await (0,_ffmpeg__WEBPACK_IMPORTED_MODULE_7__.transcode)({
+          target: attributes.url || attributes.src,
+          data: encoding
         });
       }
-    }, "Encode"), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_7__.Button, {
-      onClick: cancel
+    }, "Encode"), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)(_wordpress_components__WEBPACK_IMPORTED_MODULE_5__.Button, {
+      onClick: _ffmpeg__WEBPACK_IMPORTED_MODULE_7__.cancel
     }, "Cancel"), (0,_wordpress_element__WEBPACK_IMPORTED_MODULE_0__.createElement)("p", {
-      id: "message"
+      id: "wp-wasm-message"
     })))));
   };
 }, 'withAdvancedControls');

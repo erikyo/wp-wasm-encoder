@@ -12,6 +12,13 @@ import { availableFormats } from './data';
 export let ffmpeg = false;
 export let ffmpegLoaded = false;
 
+/**
+ * It fetches the file, transcodes it, and then sends it to the server
+ *
+ * @param  newEncode
+ * @param  newEncode.target
+ * @param  newEncode.data
+ */
 export const transcode = async ( { target, data } ) => {
 	const typeData = availableFormats[ data ];
 
@@ -75,20 +82,20 @@ export const transcode = async ( { target, data } ) => {
 					const fileData = ffmpeg.FS( 'readFile', newFilename );
 
 					// Prepare the file to be sent as a blob with the correct mime
-					const result = new window.Blob( [ fileData ], {
-						type: newFileMime,
-					} );
+					// const result = new window.Blob( [ fileData ], {
+					// 	type: newFileMime,
+					// } );
 
 					// Post media via REST
 					apiFetch( {
 						path,
 						headers: {
 							'Content-Type': newFileMime,
+							'Content-Title': newFilename,
+							'Content-Disposition':
+								'attachment; filename="' + newFilename + '"',
 						},
-						data: {
-							fileName: newFilename,
-							fileData: result,
-						},
+						body: fileData,
 						method: 'POST',
 					} )
 						.then( ( response ) => {
@@ -104,6 +111,9 @@ export const transcode = async ( { target, data } ) => {
 		} );
 };
 
+/**
+ * It cancels the current ffmpeg process
+ */
 export const cancel = () => {
 	try {
 		ffmpeg.exit();
